@@ -1,18 +1,18 @@
-# CRUD Management Dashboard - Team 8 Mini Project
+# CRUD Management Dashboard - Student Management System
 
 A full-stack student management dashboard application built with **Next.js**, **Spring Boot**, and **MySQL**.
 
 ---
 
-## 👥 Team Responsibilities
+## 🏛️ Architecture & Modules
 
-| Role | Responsibility | Tech Stack | Status |
+| Module | Responsibility | Tech Stack | Status |
 |---|---|---|:---:|
-| **Member 1** | Dashboard UI, Student Listing Table & Search/Filter | Next.js | Upcoming |
-| **Member 2** | Add/Edit Student Forms, CRUD Interaction & Validation | Next.js | Upcoming |
-| **Member 3** | Database Setup, Student Entity, Repository & JPA/Hibernate | Spring Boot & MySQL | ✅ **Completed** |
-| **Member 4** | Student Service Layer, REST APIs & Duplicate Email Checks | Spring Boot | Upcoming |
-| **Member 5** | Centralized Exception Handling, Error Response & SLF4J Logging | Spring Boot | Upcoming |
+| **Dashboard UI** | Dashboard Layout, Student Listing Table & Search/Filter | Next.js | Upcoming |
+| **Forms & CRUD** | Add/Edit Student Forms, Form Validation & Interaction | Next.js | Upcoming |
+| **Database & Repository** | Database Setup, Student Entity, Repository & JPA/Hibernate | Spring Boot & MySQL | ✅ **Completed** |
+| **REST APIs & Service** | Student Service Layer, 5 REST Endpoints & Duplicate Email Checks | Spring Boot | Upcoming |
+| **Exception Handling** | Centralized Exception Handling, Error Response & SLF4J Logging | Spring Boot | Upcoming |
 
 ---
 
@@ -23,7 +23,7 @@ virtusa_miniproject/
 ├── backend/                                       # Spring Boot 3 Backend
 │   ├── pom.xml                                    # Dependencies (JPA, MySQL, Validation, Web)
 │   ├── mvnw / mvnw.cmd                            # Maven Wrapper (Java 17/22 compatible)
-│   ├── README.md                                  # Detailed Backend & Handover Documentation
+│   ├── README.md                                  # Detailed Backend Documentation
 │   └── src/
 │       ├── main/
 │       │   ├── java/com/virtusa/studentmanagement/
@@ -37,7 +37,7 @@ virtusa_miniproject/
 │       │       └── data.sql                       # Seed data script
 │       └── test/
 │           └── java/.../StudentRepositoryTest.java# 6 automated CRUD repository tests
-├── frontend/                                      # Next.js Frontend (Members 1 & 2)
+├── frontend/                                      # Next.js Frontend
 └── README.md
 ```
 

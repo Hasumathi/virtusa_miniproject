@@ -16,7 +16,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Repository and Database Operations Integration Tests.
  * 
- * Member 3 Tasks 6 & 7:
  * - Implement database operations.
  * - Test database connectivity and repository methods.
  */

@@ -1,11 +1,10 @@
 # Student Management Backend (Spring Boot)
 
-**Team 8 – Mini Project**  
-**Role:** Member 3 – Backend (Database, Entity and Repository)
+**Module:** Backend (Database, Entity and Repository)
 
 ---
 
-## 📋 Member 3 Responsibilities & Deliverables
+## 📋 Responsibilities & Deliverables
 
 | Deliverable | File / Location | Description |
 |---|---|---|
@@ -44,7 +43,7 @@ Extends `JpaRepository<Student, Long>`:
   - `findAll()` — Retrieve all records
   - `deleteById(id)` — Delete record
   - `count()` — Total record count
-- **Custom Methods (Ready for Member 4 & 5):**
+- **Custom Methods:**
   - `Optional<Student> findByEmail(String email)` — Lookup by email
   - `boolean existsByEmail(String email)` — Duplicate check for Create Student API
   - `boolean existsByEmailAndIdNot(String email, Long id)` — Duplicate check for Update Student API
@@ -68,23 +67,21 @@ spring.datasource.password=YOUR_PASSWORD
 ### 2. Run the Application
 Open a terminal in the `backend` folder and run:
 ```bash
-mvn spring-boot:run
+.\mvnw spring-boot:run
 ```
-Or open the `backend` folder in IntelliJ IDEA, Eclipse, or VS Code and run `StudentManagementApplication.java`.
+*(Or offline with in-memory H2: `.\mvnw spring-boot:run "-Dspring-boot.run.profiles=h2"`)*
 
 ### 3. Run the Unit & Integration Tests
 ```bash
-mvn test
+.\mvnw test
 ```
 The test suite executes using an in-memory database, verifying all database operations without requiring an active MySQL instance.
 
 ---
 
-## 🤝 Handover Notes for Team Members
+## 🤝 Service & Controller Integration Notes
 
-- **For Member 4 (Service & Controller):**
-  - Inject `StudentRepository` into your `StudentService.java`.
-  - Use `studentRepository.existsByEmail(...)` in `createStudent()` to prevent duplicates.
-  - Use `studentRepository.existsByEmailAndIdNot(...)` in `updateStudent()` to prevent duplicate emails during edits.
-- **For Member 5 (Exception Handling & Errors):**
-  - Throw custom exceptions like `DuplicateEmailException` when repository checks fail, and `StudentNotFoundException` when `findById(...)` returns empty.
+- Inject `StudentRepository` into `StudentService.java`.
+- Use `studentRepository.existsByEmail(...)` in `createStudent()` to prevent duplicates.
+- Use `studentRepository.existsByEmailAndIdNot(...)` in `updateStudent()` to prevent duplicate emails during edits.
+- Throw custom exceptions like `DuplicateEmailException` when repository checks fail, and `StudentNotFoundException` when `findById(...)` returns empty.

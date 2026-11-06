@@ -15,8 +15,7 @@ import java.util.List;
 /**
  * Database Initializer & Connectivity Test Component.
  * 
- * Member 3 Deliverable:
- * - Tests and verifies MySQL database connectivity on application startup.
+ * - Tests and verifies database connectivity on application startup.
  * - Implements initial database operations (Insert, Count, Query) using StudentRepository.
  * - Seeds initial student records if the database table is empty.
  */
@@ -36,7 +35,7 @@ public class DatabaseInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         logger.info("===================================================================");
-        logger.info(">>> MEMBER 3: TESTING DATABASE CONNECTIVITY & OPERATIONS <<<");
+        logger.info(">>> TESTING DATABASE CONNECTIVITY & OPERATIONS <<<");
         logger.info("===================================================================");
 
         // 1. Test raw database connectivity & metadata

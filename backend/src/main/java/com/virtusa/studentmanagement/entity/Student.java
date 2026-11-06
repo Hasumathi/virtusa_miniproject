@@ -20,8 +20,6 @@ import java.util.Objects;
 /**
  * Student Entity mapped to the MySQL 'students' table.
  * 
- * Member 3 Deliverable: Entity definition and JPA mapping.
- * 
  * Fields:
  * - id: Auto-generated primary key (Student ID)
  * - name: Full name of the student

@@ -15,7 +15,7 @@
     <artifactId>student-management-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>student-management-backend</name>
-    <description>Student Management Backend - Team 8 Mini Project (Member 3: Database, Entity &amp; Repository)</description>
+    <description>Student Management Backend - Team 8 Mini Project (Database, Entity &amp; Repository)</description>
 
     <properties>
         <java.version>17</java.version>

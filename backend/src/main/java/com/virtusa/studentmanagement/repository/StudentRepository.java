@@ -12,8 +12,6 @@ import java.util.Optional;
 /**
  * Spring Data JPA Repository for the Student Entity.
  * 
- * Member 3 Deliverable: Repository layer definition and database operations.
- * 
  * Extends JpaRepository to inherit all standard CRUD operations:
  * - save(Student student): Create or Update
  * - findById(Long id): Retrieve by ID
@@ -23,8 +21,8 @@ import java.util.Optional;
  * - existsById(Long id): Check existence by ID
  * 
  * Custom query methods provide direct support for:
- * - Duplicate email checks (for Member 4)
- * - Search and filtering by name/department (for Member 1)
+ * - Duplicate email checks
+ * - Search and filtering by name/department
  */
 @Repository
 public interface StudentRepository extends JpaRepository<Student, Long> {
@@ -39,7 +37,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     /**
      * Check if a student with the given email already exists in the database.
-     * Used by Member 4 to prevent duplicate email entries during student creation.
+     * Used to prevent duplicate email entries during student creation.
      * 
      * @param email student email
      * @return true if email exists, false otherwise
