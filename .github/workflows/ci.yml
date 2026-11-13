@@ -1,0 +1,36 @@
+name: Backend CI Validation Pipeline
+
+on:
+  push:
+    branches: [ "main", "prod" ]
+  pull_request:
+    branches: [ "main", "prod" ]
+
+jobs:
+  validate-and-build:
+    name: Build & Run Automated Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Make Maven Wrapper Executable
+        run: chmod +x backend/mvnw
+
+      - name: Run Test Suite (Validation Pipeline)
+        run: |
+          cd backend
+          ./mvnw clean test
+
+      - name: Build Executable Package
+        run: |
+          cd backend
+          ./mvnw package -DskipTests
