@@ -1,0 +1,30 @@
+info:
+  name: Update Student
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: http://localhost:8080/api/students/1
+  auth: inherit
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Aarav Sharma Updated",
+        "email": "aarav.sharma@example.com",
+        "department": "Computer Science & Engineering",
+        "yearOfStudy": 4,
+        "phoneNumber": "9876543210"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+

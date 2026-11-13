@@ -1,6 +1,8 @@
 package com.virtusa.studentmanagement.repository;
 
 import com.virtusa.studentmanagement.entity.Student;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -87,4 +89,17 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
            "LOWER(s.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
            "LOWER(s.department) LIKE LOWER(CONCAT('%', :keyword, '%'))")
     List<Student> searchByKeyword(@Param("keyword") String keyword);
+
+    /**
+     * Paginated keyword search across name and department.
+     */
+    @Query("SELECT s FROM Student s WHERE " +
+           "LOWER(s.name) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(s.department) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<Student> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * Paginated filter by department.
+     */
+    Page<Student> findByDepartmentIgnoreCase(String department, Pageable pageable);
 }

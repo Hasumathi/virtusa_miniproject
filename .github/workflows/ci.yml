@@ -1,0 +1,31 @@
+name: Build Validation Pipeline
+
+on:
+  push:
+    branches: [ "main", "prod" ]
+  pull_request:
+    branches: [ "main", "prod" ]
+
+jobs:
+  build-validation:
+    name: Build & Code Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Grant Execute Permission to Maven Wrapper
+        run: chmod +x backend/mvnw
+
+      - name: Validate Build & Run Automated Tests
+        run: |
+          cd backend
+          ./mvnw clean verify

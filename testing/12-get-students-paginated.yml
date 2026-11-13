@@ -1,0 +1,25 @@
+info:
+  name: Get Students Paginated & Sorted
+  type: http
+  seq: 12
+
+http:
+  method: GET
+  url: http://localhost:8080/api/students/page?page=0&size=2&sortBy=name&direction=asc
+  params:
+    - name: page
+      value: 0
+    - name: size
+      value: 2
+    - name: sortBy
+      value: name
+    - name: direction
+      value: asc
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
