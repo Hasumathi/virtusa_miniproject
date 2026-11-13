@@ -2,8 +2,10 @@ package com.virtusa.studentmanagement.service;
 
 import com.virtusa.studentmanagement.entity.Student;
 import com.virtusa.studentmanagement.exception.DuplicateEmailException;
+import com.virtusa.studentmanagement.exception.InvalidStudentDataException;
 import com.virtusa.studentmanagement.exception.StudentNotFoundException;
 import com.virtusa.studentmanagement.repository.StudentRepository;
+import com.virtusa.studentmanagement.util.CsvHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -12,7 +14,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -166,5 +171,41 @@ public class StudentService {
     public List<Student> getStudentsByYear(Integer year) {
         logger.info("Filtering students by academic year: {}", year);
         return studentRepository.findByYearOfStudy(year);
+    }
+
+    /**
+     * Export all students to a CSV byte stream.
+     */
+    @Transactional(readOnly = true)
+    public ByteArrayInputStream exportStudentsCsv() {
+        logger.info("Exporting all students to CSV stream");
+        List<Student> students = studentRepository.findAll();
+        return CsvHelper.studentsToCsv(students);
+    }
+
+    /**
+     * Bulk import students from an uploaded CSV file.
+     * Validates records and ensures email uniqueness.
+     */
+    public int importStudentsCsv(MultipartFile file) {
+        logger.info("Importing students from CSV file: {}", file.getOriginalFilename());
+        if (file.isEmpty()) {
+            throw new InvalidStudentDataException("Uploaded CSV file is empty");
+        }
+
+        try {
+            List<Student> students = CsvHelper.csvToStudents(file.getInputStream());
+            for (Student s : students) {
+                if (studentRepository.existsByEmail(s.getEmail())) {
+                    throw new DuplicateEmailException(s.getEmail(), "import");
+                }
+            }
+            List<Student> saved = studentRepository.saveAll(students);
+            logger.info("Successfully imported {} students from CSV", saved.size());
+            return saved.size();
+        } catch (IOException e) {
+            logger.error("Failed to read CSV input stream: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to process CSV file: " + e.getMessage(), e);
+        }
     }
 }

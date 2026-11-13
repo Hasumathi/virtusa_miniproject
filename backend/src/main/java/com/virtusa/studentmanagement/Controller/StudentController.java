@@ -1,11 +1,16 @@
 package com.virtusa.studentmanagement.Controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.virtusa.studentmanagement.entity.Student;
 import com.virtusa.studentmanagement.service.StudentService;
@@ -148,5 +154,37 @@ public class StudentController {
     public ResponseEntity<List<Student>> getStudentsByYear(@PathVariable Integer year) {
         logger.info("REST GET /api/students/year/{} received", year);
         return ResponseEntity.ok(studentService.getStudentsByYear(year));
+    }
+
+    // GET: Export students data as downloadable CSV
+    @Operation(summary = "Export students as CSV", description = "Generates and downloads a CSV file containing all student records")
+    @ApiResponse(responseCode = "200", description = "CSV file stream returned")
+    @GetMapping("/export/csv")
+    public ResponseEntity<Resource> exportStudentsCsv() {
+        logger.info("REST GET /api/students/export/csv received");
+        String filename = "students.csv";
+        InputStreamResource file = new InputStreamResource(studentService.exportStudentsCsv());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(file);
+    }
+
+    // POST: Bulk import students via CSV file upload
+    @Operation(summary = "Bulk import students from CSV", description = "Uploads a CSV file containing students and persists all validated rows")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Students imported successfully"),
+        @ApiResponse(responseCode = "400", description = "CSV file is empty or contains invalid data"),
+        @ApiResponse(responseCode = "409", description = "CSV contains an email that already exists in the database")
+    })
+    @PostMapping(value = "/import/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Object>> importStudentsCsv(@RequestParam("file") MultipartFile file) {
+        logger.info("REST POST /api/students/import/csv received (filename: {})", file.getOriginalFilename());
+        int count = studentService.importStudentsCsv(file);
+        return ResponseEntity.ok(Map.of(
+                "message", "Successfully imported " + count + " students from CSV",
+                "importedCount", count
+        ));
     }
 }
