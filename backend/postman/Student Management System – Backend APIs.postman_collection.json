@@ -1,97 +1,214 @@
 {
   "info": {
-    "_postman_id": "8d4e5108-2f1e-4dc3-b732-70b81bc93888",
     "name": "Student Management System – Backend APIs",
-    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "55858812",
-    "_collection_link": "https://go.postman.co/collection/55858812-8d4e5108-2f1e-4dc3-b732-70b81bc93888?source=collection_link"
+    "description": "Comprehensive Postman Collection covering CRUD, Dynamic Pagination, Filtering, CSV Bulk Import/Export, and Centralized Exception Handling for Team 8 Student Management Backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Student CRUD",
+      "name": "1. Student CRUD",
       "item": [
         {
-          "name": "GetAllStudents",
+          "name": "Get All Students",
           "request": {
             "method": "GET",
-            "header": [],
-            "url": {
-              "raw": ""
-            }
-          },
-          "response": []
+            "url": "http://localhost:8080/api/students"
+          }
         },
         {
-          "name": "GetStudentById",
+          "name": "Get Student By ID",
           "request": {
             "method": "GET",
-            "header": [],
-            "url": {
-              "raw": ""
-            }
-          },
-          "response": []
+            "url": "http://localhost:8080/api/students/1"
+          }
         },
         {
           "name": "Create Student",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": ""
-            }
-          },
-          "response": []
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kavitha Raman\",\n  \"email\": \"kavitha.raman@example.com\",\n  \"department\": \"Computer Science\",\n  \"yearOfStudy\": 2,\n  \"phoneNumber\": \"9840123456\"\n}"
+            },
+            "url": "http://localhost:8080/api/students"
+          }
         },
         {
           "name": "Update Student",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": ""
-            }
-          },
-          "response": []
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aarav Sharma Updated\",\n  \"email\": \"aarav.sharma@example.com\",\n  \"department\": \"Computer Science & Engineering\",\n  \"yearOfStudy\": 4,\n  \"phoneNumber\": \"9876543210\"\n}"
+            },
+            "url": "http://localhost:8080/api/students/1"
+          }
         },
         {
-          "name": "Delete Request",
+          "name": "Delete Student",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": ""
-            }
-          },
-          "response": []
+            "method": "DELETE",
+            "url": "http://localhost:8080/api/students/1"
+          }
         }
       ]
     },
     {
-      "name": "Filters and Search",
+      "name": "2. Search, Filters & Pagination",
       "item": [
         {
-          "name": "Search Students",
+          "name": "Get Students Paginated & Sorted",
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": ""
+              "raw": "http://localhost:8080/api/students/page?page=0&size=2&sortBy=name&direction=asc",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "students", "page"],
+              "query": [
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "2"},
+                {"key": "sortBy", "value": "name"},
+                {"key": "direction", "value": "asc"}
+              ]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "Filter by dept",
+          "name": "Search Students by Keyword",
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": ""
+              "raw": "http://localhost:8080/api/students/search?keyword=Computer",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "students", "search"],
+              "query": [
+                {"key": "keyword", "value": "Computer"}
+              ]
             }
-          },
-          "response": []
+          }
+        },
+        {
+          "name": "Filter by Department",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8080/api/students/department/Computer%20Science"
+          }
+        },
+        {
+          "name": "Filter by Year of Study",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8080/api/students/year/3"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. CSV Bulk Operations",
+      "item": [
+        {
+          "name": "Export Students as CSV",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8080/api/students/export/csv"
+          }
+        },
+        {
+          "name": "Import Students via CSV",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file"
+                }
+              ]
+            },
+            "url": "http://localhost:8080/api/students/import/csv"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Exception Handling & Error Tests",
+      "item": [
+        {
+          "name": "404 Not Found (StudentNotFoundException)",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8080/api/students/99999"
+          }
+        },
+        {
+          "name": "400 Validation Failure (Field-by-Field Map)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\",\n  \"email\": \"not-a-valid-email\",\n  \"department\": \"\",\n  \"yearOfStudy\": 5,\n  \"phoneNumber\": \"123\"\n}"
+            },
+            "url": "http://localhost:8080/api/students"
+          }
+        },
+        {
+          "name": "409 Conflict (DuplicateEmailException)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate Person\",\n  \"email\": \"aarav.sharma@example.com\",\n  \"department\": \"Computer Science\",\n  \"yearOfStudy\": 3,\n  \"phoneNumber\": \"9876543210\"\n}"
+            },
+            "url": "http://localhost:8080/api/students"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Monitoring & Actuator",
+      "item": [
+        {
+          "name": "Actuator Health Check",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8080/actuator/health"
+          }
+        },
+        {
+          "name": "Actuator Application Info",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:8080/actuator/info"
+          }
         }
       ]
     }

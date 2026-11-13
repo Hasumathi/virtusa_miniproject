@@ -1,0 +1,430 @@
+openapi: 3.0.1
+info:
+  title: Student Management System REST API
+  description: REST API documentation for Student Management Backend - Team 8 Mini
+    Project
+  contact:
+    name: Virtusa Student Management Team
+    email: studentmanagement@virtusa.com
+  license:
+    name: Apache 2.0
+  version: v1.0.0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+tags:
+- name: Student Management
+  description: "REST APIs for Student CRUD operations, search, and department/year\
+    \ filters"
+paths:
+  /api/students/{id}:
+    get:
+      tags:
+      - Student Management
+      summary: Get student by ID
+      description: Retrieves details of a specific student by their unique ID
+      operationId: getStudentById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "200":
+          description: Student found
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          description: Student not found with specified ID
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Student"
+    put:
+      tags:
+      - Student Management
+      summary: Update student by ID
+      description: Updates details of an existing student record
+      operationId: updateStudent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Student"
+        required: true
+      responses:
+        "200":
+          description: Student successfully updated
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Student"
+        "400":
+          description: Validation failed for request body
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Student"
+        "409":
+          description: Email is already taken by another student
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Student"
+        "404":
+          description: Student not found with specified ID
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Student"
+    delete:
+      tags:
+      - Student Management
+      summary: Delete student by ID
+      description: Deletes a student record from the database by ID
+      operationId: deleteStudent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        "404":
+          description: Student not found with specified ID
+          content:
+            '*/*':
+              schema:
+                type: string
+        "200":
+          description: Student deleted successfully
+          content:
+            '*/*':
+              schema:
+                type: string
+  /api/students:
+    get:
+      tags:
+      - Student Management
+      summary: Get all students
+      description: Retrieves a list of all registered students
+      operationId: getAllStudents
+      responses:
+        "200":
+          description: List of students successfully retrieved
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      tags:
+      - Student Management
+      summary: Create a new student
+      description: Registers a new student record after validating input fields and
+        email uniqueness
+      operationId: createStudent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Student"
+        required: true
+      responses:
+        "400":
+          description: Validation failed for request body
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Student"
+        "409":
+          description: Student with this email already exists
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Student"
+        "201":
+          description: Student successfully created
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/Student"
+  /api/students/import/csv:
+    post:
+      tags:
+      - Student Management
+      summary: Bulk import students from CSV
+      description: Uploads a CSV file containing students and persists all validated
+        rows
+      operationId: importStudentsCsv
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+              - file
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Students imported successfully
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+        "409":
+          description: CSV contains an email that already exists in the database
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+        "400":
+          description: CSV file is empty or contains invalid data
+          content:
+            '*/*':
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+  /api/students/year/{year}:
+    get:
+      tags:
+      - Student Management
+      summary: Filter students by year of study
+      description: Retrieves all students in a specified academic year (1-4)
+      operationId: getStudentsByYear
+      parameters:
+      - name: year
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: Students in year returned
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+  /api/students/search:
+    get:
+      tags:
+      - Student Management
+      summary: Search students
+      description: Search students by keyword matching either name or department (case-insensitive)
+      operationId: searchStudents
+      parameters:
+      - name: keyword
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Matching students returned
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+  /api/students/page:
+    get:
+      tags:
+      - Student Management
+      summary: Get students with pagination and sorting
+      description: Retrieves a paginated and sorted list of students (e.g. ?page=0&size=10&sortBy=name&direction=asc)
+      operationId: getStudentsWithPagination
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 10
+      - name: sortBy
+        in: query
+        required: false
+        schema:
+          type: string
+          default: id
+      - name: direction
+        in: query
+        required: false
+        schema:
+          type: string
+          default: asc
+      responses:
+        "200":
+          description: Paginated list of students retrieved
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PageStudent"
+  /api/students/export/csv:
+    get:
+      tags:
+      - Student Management
+      summary: Export students as CSV
+      description: Generates and downloads a CSV file containing all student records
+      operationId: exportStudentsCsv
+      responses:
+        "200":
+          description: CSV file stream returned
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+  /api/students/department/{department}:
+    get:
+      tags:
+      - Student Management
+      summary: Filter students by department
+      description: Retrieves all students belonging to a specified department
+      operationId: getStudentsByDepartment
+      parameters:
+      - name: department
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Students in department returned
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+components:
+  schemas:
+    Student:
+      required:
+      - department
+      - email
+      - name
+      - phoneNumber
+      - yearOfStudy
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          maxLength: 100
+          minLength: 2
+          type: string
+        email:
+          type: string
+        department:
+          maxLength: 100
+          minLength: 0
+          type: string
+        yearOfStudy:
+          maximum: 4
+          minimum: 1
+          type: integer
+          format: int32
+        phoneNumber:
+          pattern: "^[0-9]{10}$"
+          type: string
+    PageStudent:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/Student"
+        number:
+          type: integer
+          format: int32
+        sort:
+          type: array
+          items:
+            $ref: "#/components/schemas/SortObject"
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: "#/components/schemas/PageableObject"
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        sort:
+          type: array
+          items:
+            $ref: "#/components/schemas/SortObject"
+        paged:
+          type: boolean
+        unpaged:
+          type: boolean
+        pageSize:
+          type: integer
+          format: int32
+        pageNumber:
+          type: integer
+          format: int32
+    SortObject:
+      type: object
+      properties:
+        direction:
+          type: string
+        nullHandling:
+          type: string
+        ascending:
+          type: boolean
+        property:
+          type: string
+        ignoreCase:
+          type: boolean
