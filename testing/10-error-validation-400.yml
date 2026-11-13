@@ -1,0 +1,30 @@
+info:
+  name: "Exception: 400 Validation Failure"
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: http://localhost:8080/api/students
+  auth: inherit
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "",
+        "email": "invalid-email-address",
+        "department": "",
+        "yearOfStudy": 5,
+        "phoneNumber": "123"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+

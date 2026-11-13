@@ -1,0 +1,30 @@
+info:
+  name: "Exception: 409 Duplicate Email"
+  type: http
+  seq: 11
+
+http:
+  method: POST
+  url: http://localhost:8080/api/students
+  auth: inherit
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Duplicate Student",
+        "email": "aarav.sharma@example.com",
+        "department": "Computer Science",
+        "yearOfStudy": 2,
+        "phoneNumber": "9876543210"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
