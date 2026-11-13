@@ -1,4 +1,4 @@
-name: Backend CI Validation Pipeline
+name: Build Validation Pipeline
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [ "main", "prod" ]
 
 jobs:
-  validate-and-build:
-    name: Build & Run Automated Test Suite
+  build-validation:
+    name: Build & Code Verification
     runs-on: ubuntu-latest
 
     steps:
@@ -22,15 +22,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Make Maven Wrapper Executable
+      - name: Grant Execute Permission to Maven Wrapper
         run: chmod +x backend/mvnw
 
-      - name: Run Test Suite (Validation Pipeline)
+      - name: Validate Build & Run Automated Tests
         run: |
           cd backend
-          ./mvnw clean test
-
-      - name: Build Executable Package
-        run: |
-          cd backend
-          ./mvnw package -DskipTests
+          ./mvnw clean verify
