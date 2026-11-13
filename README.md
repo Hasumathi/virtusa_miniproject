@@ -207,8 +207,8 @@ The `testing/` directory contains a pre-built Bruno API collection with **13 req
 ### 1. Build and Run the Application
 ```bash
 # Clone the repository
-git clone https://github.com/KoushikCodesWebpages/team-8.git
-cd team-8/backend
+git clone -b prod https://github.com/Hasumathi/virtusa_miniproject.git
+cd virtusa_miniproject/backend
 
 # Run automated tests (9/9 tests pass)
 ./mvnw test
