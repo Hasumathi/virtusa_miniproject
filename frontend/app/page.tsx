@@ -1,7 +1,13 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+// MEMBER 2: CRUD components and styles
+import "./crud.css";
+import StudentFormModal from "@/components/StudentFormModal";
+import DeleteConfirmDialog from "@/components/DeleteConfirmDialog";
+import type { ToastMessage } from "@/components/DeleteConfirmDialog";
+import Toast from "@/components/Toast";
 
 const API_URL = "http://localhost:8080/api/students";
 
@@ -32,13 +38,25 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // MEMBER 2: CRUD state
+  // refreshKey: bump it to re-run the GET request after add / edit / delete
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [formMode, setFormMode] = useState<
+    { mode: "add" } | { mode: "edit"; student: Student } | null
+  >(null);
+  const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
+  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const refreshStudents = () => setRefreshKey((k) => k + 1);
+  const dismissToast = useCallback(() => setToast(null), []);
+
   // GET API: Fetch all students
   useEffect(() => {
     const controller = new AbortController();
 
     async function fetchStudents() {
       try {
-        setLoading(true);
+        // MEMBER 2: full-page loading only on first load; refreshes after CRUD are silent
+        if (refreshKey === 0) setLoading(true);
         setError("");
 
         const response = await fetch(API_URL, {
@@ -80,7 +98,7 @@ export default function Home() {
     fetchStudents();
 
     return () => controller.abort();
-  }, []);
+  }, [refreshKey]);
 
   // Get departments dynamically from API records
   const departments = useMemo(
@@ -283,7 +301,12 @@ export default function Home() {
                 <p>View and manage your registered student information.</p>
               </div>
 
-              <button className="add-button" type="button">
+              <button
+                className="add-button"
+                type="button"
+                onClick={() => setFormMode({ mode: "add" })}
+                disabled={loading || !!error}
+              >
                 <span>＋</span> Add Student
               </button>
             </div>
@@ -328,13 +351,14 @@ export default function Home() {
                     <th>DEPARTMENT</th>
                     <th>YEAR</th>
                     <th>PHONE NUMBER</th>
+                    <th>ACTIONS</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="empty-state">
                           <strong>Loading students...</strong>
                           <p>Connecting to the StudentHub backend.</p>
@@ -343,7 +367,7 @@ export default function Home() {
                     </tr>
                   ) : error ? (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="empty-state">
                           <div className="empty-icon">!</div>
                           <strong>Unable to load students</strong>
@@ -388,11 +412,28 @@ export default function Home() {
 
                         <td>{formatYear(student.yearOfStudy)}</td>
                         <td>{student.phoneNumber}</td>
+
+                        <td className="actions-cell">
+                          <button
+                            type="button"
+                            className="row-action"
+                            onClick={() => setFormMode({ mode: "edit", student })}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="row-action row-action-delete"
+                            onClick={() => setDeleteTarget(student)}
+                          >
+                            Delete
+                          </button>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6}>
+                      <td colSpan={7}>
                         <div className="empty-state">
                           <div className="empty-icon">⌕</div>
                           <strong>No students found</strong>
@@ -428,6 +469,36 @@ export default function Home() {
           </footer>
         </section>
       </main>
+
+      {/* MEMBER 2: Add / Edit form, delete confirmation and messages */}
+      {formMode && (
+        <StudentFormModal
+          key={formMode.mode === "edit" ? `edit-${formMode.student.id}` : "add"}
+          mode={formMode.mode}
+          student={formMode.mode === "edit" ? formMode.student : undefined}
+          departments={departments}
+          onClose={() => setFormMode(null)}
+          onSaved={(message) => {
+            setFormMode(null);
+            setToast({ type: "success", text: message });
+            refreshStudents();
+          }}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          student={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDone={(result) => {
+            setDeleteTarget(null);
+            setToast(result);
+            refreshStudents();
+          }}
+        />
+      )}
+
+      {toast && <Toast toast={toast} onDismiss={dismissToast} />}
     </div>
   );
 }
