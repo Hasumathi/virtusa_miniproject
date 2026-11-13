@@ -6,6 +6,10 @@ import com.virtusa.studentmanagement.exception.StudentNotFoundException;
 import com.virtusa.studentmanagement.repository.StudentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +43,32 @@ public class StudentService {
         List<Student> students = studentRepository.findAll();
         logger.debug("Retrieved {} student record(s)", students.size());
         return students;
+    }
+
+    /**
+     * Retrieve students with pagination and dynamic sorting.
+     */
+    @Transactional(readOnly = true)
+    public Page<Student> getStudentsPaginated(int page, int size, String sortBy, String direction) {
+        logger.info("Fetching students page {} (size: {}, sortBy: {}, direction: {})", page, size, sortBy, direction);
+        Sort sort = direction.equalsIgnoreCase(Sort.Direction.DESC.name())
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return studentRepository.findAll(pageable);
+    }
+
+    /**
+     * Search students with pagination and sorting.
+     */
+    @Transactional(readOnly = true)
+    public Page<Student> searchStudentsPaginated(String keyword, int page, int size, String sortBy, String direction) {
+        logger.info("Searching students with pagination keyword: '{}', page: {}, size: {}", keyword, page, size);
+        Sort sort = direction.equalsIgnoreCase(Sort.Direction.DESC.name())
+                ? Sort.by(sortBy).descending()
+                : Sort.by(sortBy).ascending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return studentRepository.searchByKeyword(keyword, pageable);
     }
 
     /**

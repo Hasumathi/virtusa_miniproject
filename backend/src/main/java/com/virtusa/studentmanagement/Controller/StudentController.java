@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -48,6 +49,20 @@ public class StudentController {
         logger.info("REST GET /api/students received");
         List<Student> students = studentService.getAllStudents();
         return ResponseEntity.ok(students);
+    }
+
+    // GET: Retrieve students with pagination and sorting
+    @Operation(summary = "Get students with pagination and sorting", description = "Retrieves a paginated and sorted list of students (e.g. ?page=0&size=10&sortBy=name&direction=asc)")
+    @ApiResponse(responseCode = "200", description = "Paginated list of students retrieved")
+    @GetMapping("/page")
+    public ResponseEntity<Page<Student>> getStudentsWithPagination(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction) {
+        logger.info("REST GET /api/students/page received (page: {}, size: {}, sortBy: {}, direction: {})", page, size, sortBy, direction);
+        Page<Student> studentPage = studentService.getStudentsPaginated(page, size, sortBy, direction);
+        return ResponseEntity.ok(studentPage);
     }
 
     // GET: Retrieve a student by ID
