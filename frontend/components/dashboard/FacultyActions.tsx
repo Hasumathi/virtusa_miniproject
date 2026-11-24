@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 type StudentItem = {
   id: number;
@@ -8,6 +8,7 @@ type StudentItem = {
   fullName: string;
   email: string;
   phone?: string;
+  initialPassword?: string;
   departmentId?: number;
   year?: number;
   semester?: number;
@@ -68,9 +69,11 @@ export default function FacultyActions({
   // Edit Student State
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<StudentItem | null>(null);
+  const [editRegNo, setEditRegNo] = useState("");
   const [editFullName, setEditFullName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editPassword, setEditPassword] = useState("");
   const [editYear, setEditYear] = useState(3);
   const [editSem, setEditSem] = useState(5);
   const [editSection, setEditSection] = useState("A");
@@ -78,32 +81,78 @@ export default function FacultyActions({
   const [updatingStudent, setUpdatingStudent] = useState(false);
   const [editErr, setEditErr] = useState("");
 
+  // Password visibility & copy states for Students Table
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<number, boolean>>({});
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
   // Delete Student State
   const [showDeleteStudentModal, setShowDeleteStudentModal] = useState(false);
   const [deletingStudent, setDeletingStudent] = useState<StudentItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteErr, setDeleteErr] = useState("");
 
-  // Subjects State
+  // Subjects State across all 4 study years
   const [subjects, setSubjects] = useState<SubjectItem[]>([
+    { id: 6, subjectCode: "CS1101", subjectName: "Problem Solving & C Programming", semester: 1, credits: 4 },
+    { id: 7, subjectCode: "MA1101", subjectName: "Engineering Mathematics I", semester: 1, credits: 4 },
+    { id: 8, subjectCode: "CS1201", subjectName: "Object-Oriented Programming with Java", semester: 2, credits: 4 },
+    { id: 9, subjectCode: "EC1201", subjectName: "Digital Logic & Computer Organization", semester: 2, credits: 3 },
     { id: 1, subjectCode: "CS101", subjectName: "Data Structures & Algorithms", semester: 3, credits: 4 },
     { id: 2, subjectCode: "CS102", subjectName: "Database Management Systems", semester: 3, credits: 4 },
+    { id: 3, subjectCode: "CS103", subjectName: "Operating Systems", semester: 4, credits: 3 },
     { id: 4, subjectCode: "CS104", subjectName: "Computer Networks", semester: 5, credits: 3 },
     { id: 5, subjectCode: "CS105", subjectName: "Web Technologies", semester: 5, credits: 4 },
+    { id: 10, subjectCode: "CS106", subjectName: "Software Engineering & DevOps", semester: 6, credits: 3 },
+    { id: 11, subjectCode: "CS107", subjectName: "Artificial Intelligence & Machine Learning", semester: 6, credits: 4 },
+    { id: 12, subjectCode: "CS108", subjectName: "Cloud Computing & Distributed Systems", semester: 7, credits: 3 },
+    { id: 13, subjectCode: "CS109", subjectName: "Cyber Security & Cryptography", semester: 7, credits: 3 },
+    { id: 14, subjectCode: "CS110", subjectName: "Capstone Project & Industrial Internship", semester: 8, credits: 6 },
   ]);
 
   // Attendance State
   const [attendanceSubjectId, setAttendanceSubjectId] = useState<number>(4);
+  const [showAllAttendanceStudents, setShowAllAttendanceStudents] = useState(false);
   const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [attendanceRecords, setAttendanceRecords] = useState<Record<number, { status: "PRESENT" | "ABSENT" | "ON_LEAVE"; remarks: string }>>({});
   const [submittingAttendance, setSubmittingAttendance] = useState(false);
   const [attendanceMsg, setAttendanceMsg] = useState("");
   const [attendanceErr, setAttendanceErr] = useState("");
 
+  const activeAttendanceSubject = useMemo(() => {
+    return subjects.find((s) => s.id === attendanceSubjectId);
+  }, [subjects, attendanceSubjectId]);
+
+  const filteredAttendanceStudents = useMemo(() => {
+    if (showAllAttendanceStudents || !activeAttendanceSubject?.semester) {
+      return students;
+    }
+    return students.filter((s) => s.semester === activeAttendanceSubject.semester);
+  }, [students, activeAttendanceSubject, showAllAttendanceStudents]);
+
   // Grades State
   const [gradeStudentId, setGradeStudentId] = useState<number>(students[0]?.id || 1);
   const [gradeSubjectId, setGradeSubjectId] = useState<number>(4);
   const [gradeSemester, setGradeSemester] = useState<number>(5);
+
+  const selectedGradeStudent = useMemo(() => {
+    return students.find((s) => s.id === gradeStudentId);
+  }, [students, gradeStudentId]);
+
+  const gradeEligibleSubjects = useMemo(() => {
+    if (!selectedGradeStudent?.semester) return subjects;
+    const matching = subjects.filter((s) => s.semester === selectedGradeStudent.semester);
+    return matching.length > 0 ? matching : subjects;
+  }, [subjects, selectedGradeStudent]);
+
+  useEffect(() => {
+    if (selectedGradeStudent?.semester) {
+      setGradeSemester(selectedGradeStudent.semester);
+      const matching = subjects.filter((s) => s.semester === selectedGradeStudent.semester);
+      if (matching.length > 0 && !matching.some((s) => s.id === gradeSubjectId)) {
+        setGradeSubjectId(matching[0].id);
+      }
+    }
+  }, [selectedGradeStudent, subjects, gradeSubjectId]);
   const [internalMarks, setInternalMarks] = useState<number>(20);
   const [assignmentMarks, setAssignmentMarks] = useState<number>(12);
   const [practicalMarks, setPracticalMarks] = useState<number>(18);
@@ -243,7 +292,10 @@ export default function FacultyActions({
 
       // Auto-enroll newly created student into available subjects for this semester
       if (createdStudent?.id && subjects.length > 0) {
-        for (const sub of subjects) {
+        const studentSemNumber = Number(studentSem);
+        const semSubjects = subjects.filter((s) => s.semester === studentSemNumber);
+        const targetSubjects = semSubjects.length > 0 ? semSubjects : subjects;
+        for (const sub of targetSubjects) {
           try {
             await fetch("/backend-api/enrollments", {
               method: "POST",
@@ -255,7 +307,7 @@ export default function FacultyActions({
                 studentId: createdStudent.id,
                 subjectId: sub.id,
                 academicYear: "2026-2027",
-                semester: sub.semester || Number(studentSem),
+                semester: sub.semester || studentSemNumber,
               }),
             });
           } catch {
@@ -283,9 +335,11 @@ export default function FacultyActions({
   // Handler: Open Edit Student Modal
   function handleOpenEditStudent(student: StudentItem) {
     setEditingStudent(student);
+    setEditRegNo(student.registerNumber || "");
     setEditFullName(student.fullName || "");
     setEditEmail(student.email || "");
     setEditPhone(student.phone || "");
+    setEditPassword(student.initialPassword || `${student.registerNumber}@Smart2026`);
     setEditYear(student.year || 3);
     setEditSem(student.semester || 5);
     setEditSection(student.section || "A");
@@ -311,9 +365,11 @@ export default function FacultyActions({
           Authorization: `Bearer ${backendToken}`,
         },
         body: JSON.stringify({
+          registerNumber: editRegNo.trim().toUpperCase(),
           fullName: editFullName.trim(),
           email: editEmail.trim().toLowerCase(),
           phone: editPhone.trim() || "9876543210",
+          initialPassword: editPassword.trim() || undefined,
           departmentId: editingStudent.departmentId || 1,
           year: Number(editYear),
           semester: Number(editSem),
@@ -333,17 +389,19 @@ export default function FacultyActions({
         fullName: editFullName.trim(),
         email: editEmail.trim().toLowerCase(),
         phone: editPhone.trim() || "9876543210",
+        initialPassword: editPassword.trim() || editingStudent.initialPassword,
         year: Number(editYear),
         semester: Number(editSem),
         section: editSection.toUpperCase(),
         accountStatus: editStatus,
         ...(data.data || {}),
+        registerNumber: data.data?.registerNumber || editRegNo.trim().toUpperCase(),
       };
 
       setStudents((prev) =>
         prev.map((s) => (s.id === editingStudent.id ? updatedStudent : s))
       );
-      setStudentMsg(`Student ${editFullName} (${editingStudent.registerNumber}) updated successfully!`);
+      setStudentMsg(`Student ${editFullName} (${editRegNo.trim().toUpperCase()}) updated successfully!`);
       setShowEditStudentModal(false);
       setEditingStudent(null);
       onDataRefresh?.();
@@ -416,14 +474,19 @@ export default function FacultyActions({
     setAttendanceMsg("");
     setAttendanceErr("");
 
-    const records = Object.entries(attendanceRecords).map(([studentId, val]) => ({
-      studentId: Number(studentId),
-      status: val.status,
-      remarks: val.remarks || (val.status === "PRESENT" ? "Attended" : "Unexcused"),
-    }));
+    const targetStudents = showAllAttendanceStudents ? students : filteredAttendanceStudents;
+
+    const records = targetStudents.map((s) => {
+      const val = attendanceRecords[s.id] || { status: "PRESENT", remarks: "Attended" };
+      return {
+        studentId: s.id,
+        status: val.status,
+        remarks: val.remarks || (val.status === "PRESENT" ? "Attended" : "Unexcused"),
+      };
+    });
 
     if (records.length === 0) {
-      setAttendanceErr("No students available to mark attendance.");
+      setAttendanceErr("No students available in this semester to mark attendance.");
       setSubmittingAttendance(false);
       return;
     }
@@ -671,7 +734,8 @@ export default function FacultyActions({
                 <tr className="border-b border-[#e9e8df]">
                   <th className="px-5 py-3.5">Register No</th>
                   <th className="px-5 py-3.5">Full Name</th>
-                  <th className="px-5 py-3.5">Email Address</th>
+                  <th className="px-5 py-3.5">Email & Phone</th>
+                  <th className="px-5 py-3.5">Student Password</th>
                   <th className="px-5 py-3.5">Academic Standing</th>
                   <th className="px-5 py-3.5">Status</th>
                   <th className="px-5 py-3.5 text-right">Quick Actions</th>
@@ -687,7 +751,47 @@ export default function FacultyActions({
                       <td className="px-5 py-3.5 font-semibold text-[#17212b]">
                         {s.fullName}
                       </td>
-                      <td className="px-5 py-3.5 text-[#68716d]">{s.email}</td>
+                      <td className="px-5 py-3.5">
+                        <div className="text-xs font-medium text-[#17212b]">{s.email}</div>
+                        {s.phone && (
+                          <div className="mt-0.5 text-[11px] text-[#68716d]">📞 {s.phone}</div>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="inline-flex items-center gap-2 rounded-xl border border-[#e9e8df] bg-[#fbfbf8] px-3 py-1.5 text-xs font-mono shadow-2xs">
+                          <span className="font-bold text-[#17212b] tracking-wider">
+                            {revealedPasswords[s.id]
+                              ? (s.initialPassword || `${s.registerNumber}@Smart2026`)
+                              : "••••••••"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRevealedPasswords((prev) => ({
+                                ...prev,
+                                [s.id]: !prev[s.id],
+                              }))
+                            }
+                            title={revealedPasswords[s.id] ? "Hide Password" : "Show Password"}
+                            className="cursor-pointer text-xs hover:scale-110 transition"
+                          >
+                            {revealedPasswords[s.id] ? "🙈" : "👁️"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const pwd = s.initialPassword || `${s.registerNumber}@Smart2026`;
+                              navigator.clipboard.writeText(pwd);
+                              setCopiedId(s.id);
+                              setTimeout(() => setCopiedId(null), 2000);
+                            }}
+                            title="Copy Password"
+                            className="cursor-pointer text-xs font-bold text-[#075b40] hover:scale-110 transition"
+                          >
+                            {copiedId === s.id ? "✓" : "📋"}
+                          </button>
+                        </div>
+                      </td>
                       <td className="px-5 py-3.5 text-[#68716d]">
                         Year {s.year || 3}, Sem {s.semester || 5} (Sec {s.section || "A"})
                       </td>
@@ -796,21 +900,40 @@ export default function FacultyActions({
               />
             </div>
 
-            <div className="flex items-end">
+            <div className="flex flex-col justify-end gap-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="showAllStudents"
+                  checked={showAllAttendanceStudents}
+                  onChange={(e) => setShowAllAttendanceStudents(e.target.checked)}
+                  className="rounded text-[#075b40] focus:ring-[#075b40]"
+                />
+                <label htmlFor="showAllStudents" className="text-xs font-semibold text-[#68716d] cursor-pointer">
+                  Show all college students
+                </label>
+              </div>
               <button
                 type="button"
                 onClick={() => {
-                  const updated: Record<number, { status: "PRESENT" | "ABSENT" | "ON_LEAVE"; remarks: string }> = {};
-                  students.forEach((s) => {
+                  const updated: Record<number, { status: "PRESENT" | "ABSENT" | "ON_LEAVE"; remarks: string }> = { ...attendanceRecords };
+                  const targetList = showAllAttendanceStudents ? students : filteredAttendanceStudents;
+                  targetList.forEach((s) => {
                     updated[s.id] = { status: "PRESENT", remarks: "All present" };
                   });
                   setAttendanceRecords(updated);
                 }}
-                className="rounded-xl border border-[#cbe4d2] bg-[#edf5ee] px-4 py-2.5 text-xs font-bold text-[#075b40] transition hover:bg-[#dceee2]"
+                className="rounded-xl border border-[#cbe4d2] bg-[#edf5ee] px-4 py-2 text-xs font-bold text-[#075b40] transition hover:bg-[#dceee2]"
               >
-                ✓ Mark All as Present
+                ✓ Mark Shown as Present ({filteredAttendanceStudents.length})
               </button>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-[#68716d]">
+            <span>
+              Showing <strong>{filteredAttendanceStudents.length}</strong> student{filteredAttendanceStudents.length === 1 ? "" : "s"} enrolled in Semester {activeAttendanceSubject?.semester ?? "All"} for <strong>{activeAttendanceSubject?.subjectCode}</strong>.
+            </span>
           </div>
 
           {attendanceMsg && (
@@ -837,85 +960,93 @@ export default function FacultyActions({
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#f0efe8]">
-                {students.map((s) => {
-                  const record = attendanceRecords[s.id] || { status: "PRESENT", remarks: "" };
-                  return (
-                    <tr key={s.id} className="hover:bg-[#fafaf7]">
-                      <td className="px-5 py-3.5 font-semibold text-[#17212b]">
-                        {s.fullName}
-                      </td>
-                      <td className="px-5 py-3.5 text-[#075b40] font-mono font-bold">
-                        {s.registerNumber}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() =>
+                {filteredAttendanceStudents.length > 0 ? (
+                  filteredAttendanceStudents.map((s) => {
+                    const record = attendanceRecords[s.id] || { status: "PRESENT", remarks: "" };
+                    return (
+                      <tr key={s.id} className="hover:bg-[#fafaf7]">
+                        <td className="px-5 py-3.5 font-semibold text-[#17212b]">
+                          {s.fullName}
+                        </td>
+                        <td className="px-5 py-3.5 text-[#075b40] font-mono font-bold">
+                          {s.registerNumber}
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAttendanceRecords((prev) => ({
+                                  ...prev,
+                                  [s.id]: { ...record, status: "PRESENT" },
+                                }))
+                              }
+                              className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
+                                record.status === "PRESENT"
+                                  ? "bg-emerald-600 text-white shadow-sm"
+                                  : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                              }`}
+                            >
+                              Present
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAttendanceRecords((prev) => ({
+                                  ...prev,
+                                  [s.id]: { ...record, status: "ABSENT" },
+                                }))
+                              }
+                              className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
+                                record.status === "ABSENT"
+                                  ? "bg-red-600 text-white shadow-sm"
+                                  : "bg-red-50 text-red-700 hover:bg-red-100"
+                              }`}
+                            >
+                              Absent
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAttendanceRecords((prev) => ({
+                                  ...prev,
+                                  [s.id]: { ...record, status: "ON_LEAVE" },
+                                }))
+                              }
+                              className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
+                                record.status === "ON_LEAVE"
+                                  ? "bg-amber-600 text-white shadow-sm"
+                                  : "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                              }`}
+                            >
+                              Leave
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3.5">
+                          <input
+                            type="text"
+                            value={record.remarks}
+                            onChange={(e) =>
                               setAttendanceRecords((prev) => ({
                                 ...prev,
-                                [s.id]: { ...record, status: "PRESENT" },
+                                [s.id]: { ...record, remarks: e.target.value },
                               }))
                             }
-                            className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
-                              record.status === "PRESENT"
-                                ? "bg-emerald-600 text-white shadow-sm"
-                                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                            }`}
-                          >
-                            Present
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setAttendanceRecords((prev) => ({
-                                ...prev,
-                                [s.id]: { ...record, status: "ABSENT" },
-                              }))
-                            }
-                            className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
-                              record.status === "ABSENT"
-                                ? "bg-red-600 text-white shadow-sm"
-                                : "bg-red-50 text-red-700 hover:bg-red-100"
-                            }`}
-                          >
-                            Absent
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setAttendanceRecords((prev) => ({
-                                ...prev,
-                                [s.id]: { ...record, status: "ON_LEAVE" },
-                              }))
-                            }
-                            className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
-                              record.status === "ON_LEAVE"
-                                ? "bg-amber-600 text-white shadow-sm"
-                                : "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                            }`}
-                          >
-                            Leave
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <input
-                          type="text"
-                          value={record.remarks}
-                          onChange={(e) =>
-                            setAttendanceRecords((prev) => ({
-                              ...prev,
-                              [s.id]: { ...record, remarks: e.target.value },
-                            }))
-                          }
-                          placeholder="Optional remarks"
-                          className="w-full max-w-xs rounded-lg border border-[#e9e8df] px-3 py-1.5 text-xs outline-none focus:border-[#075b40]"
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
+                            placeholder="Optional remarks"
+                            className="w-full max-w-xs rounded-lg border border-[#e9e8df] px-3 py-1.5 text-xs outline-none focus:border-[#075b40]"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-8 text-center text-[#68716d]">
+                      No students found enrolled in Semester {activeAttendanceSubject?.semester ?? ""}.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -923,7 +1054,7 @@ export default function FacultyActions({
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              disabled={submittingAttendance || students.length === 0}
+              disabled={submittingAttendance || (showAllAttendanceStudents ? students.length === 0 : filteredAttendanceStudents.length === 0)}
               className="rounded-xl bg-[#075b40] px-8 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#06442f] disabled:opacity-50"
             >
               {submittingAttendance ? "Saving Attendance..." : "Save Class Attendance"}
@@ -958,16 +1089,16 @@ export default function FacultyActions({
 
             <div>
               <label className="mb-2 block text-xs font-bold uppercase text-[#68716d]">
-                Course / Subject
+                Course / Subject {selectedGradeStudent ? `(Semester ${selectedGradeStudent.semester || 1})` : ""}
               </label>
               <select
                 value={gradeSubjectId}
                 onChange={(e) => setGradeSubjectId(Number(e.target.value))}
                 className="w-full rounded-xl border border-[#e9e8df] bg-[#fbfbf8] px-4 py-2.5 text-sm font-semibold outline-none focus:border-[#075b40]"
               >
-                {subjects.map((sub) => (
+                {gradeEligibleSubjects.map((sub) => (
                   <option key={sub.id} value={sub.id}>
-                    {sub.subjectCode} — {sub.subjectName}
+                    {sub.subjectCode} — {sub.subjectName} (Sem {sub.semester})
                   </option>
                 ))}
               </select>
@@ -979,7 +1110,14 @@ export default function FacultyActions({
               </label>
               <select
                 value={gradeSemester}
-                onChange={(e) => setGradeSemester(Number(e.target.value))}
+                onChange={(e) => {
+                  const newSem = Number(e.target.value);
+                  setGradeSemester(newSem);
+                  const matching = subjects.filter((s) => s.semester === newSem);
+                  if (matching.length > 0) {
+                    setGradeSubjectId(matching[0].id);
+                  }
+                }}
                 className="w-full rounded-xl border border-[#e9e8df] bg-[#fbfbf8] px-4 py-2.5 text-sm font-semibold outline-none focus:border-[#075b40]"
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
@@ -1245,16 +1383,18 @@ export default function FacultyActions({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-[#17212b]">
-                    Register Number
+                    Register Number *
                   </label>
                   <input
                     type="text"
-                    disabled
-                    value={editingStudent.registerNumber}
-                    className="w-full rounded-xl border border-[#e9e8df] bg-[#f2f4ec] px-3.5 py-2 text-sm font-bold text-[#075b40] cursor-not-allowed outline-none"
+                    required
+                    value={editRegNo}
+                    onChange={(e) => setEditRegNo(e.target.value.toUpperCase())}
+                    placeholder="e.g. 2026CS103"
+                    className="w-full rounded-xl border border-[#e9e8df] bg-[#fbfbf8] px-3.5 py-2 text-sm font-bold text-[#075b40] outline-none focus:border-[#075b40]"
                   />
                   <p className="mt-0.5 text-[10px] text-[#68716d]">
-                    Register number cannot be modified.
+                    Update student roll / register number.
                   </p>
                 </div>
 
@@ -1369,6 +1509,22 @@ export default function FacultyActions({
                   <option value="SUSPENDED">SUSPENDED (Restricted)</option>
                   <option value="PENDING_ACTIVATION">PENDING ACTIVATION</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold text-[#17212b]">
+                  Student Account Password
+                </label>
+                <input
+                  type="text"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="e.g. Password@2026"
+                  className="w-full rounded-xl border border-[#e9e8df] bg-[#fbfbf8] px-3.5 py-2 text-sm font-mono outline-none focus:border-[#075b40]"
+                />
+                <p className="mt-0.5 text-[10px] text-[#68716d]">
+                  Student portal login password. Visible to faculty for account assistance.
+                </p>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-[#e9e8df]">
@@ -1508,18 +1664,34 @@ export default function FacultyActions({
                 </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-bold text-[#17212b]">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="e.g. deepak@campus.edu"
-                  value={studentEmail}
-                  onChange={(e) => setStudentEmail(e.target.value)}
-                  className="w-full rounded-xl border border-[#e9e8df] bg-[#fbfbf8] px-3.5 py-2 text-sm outline-none focus:border-[#075b40]"
-                />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-[#17212b]">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. deepak@campus.edu"
+                    value={studentEmail}
+                    onChange={(e) => setStudentEmail(e.target.value)}
+                    className="w-full rounded-xl border border-[#e9e8df] bg-[#fbfbf8] px-3.5 py-2 text-sm outline-none focus:border-[#075b40]"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-[#17212b]">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="e.g. 9876543210"
+                    value={studentPhone}
+                    onChange={(e) => setStudentPhone(e.target.value)}
+                    className="w-full rounded-xl border border-[#e9e8df] bg-[#fbfbf8] px-3.5 py-2 text-sm outline-none focus:border-[#075b40]"
+                  />
+                </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">

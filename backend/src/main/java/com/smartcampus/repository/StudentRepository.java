@@ -15,7 +15,11 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
 
     Optional<Student> findByIdAndIsDeletedFalse(Long id);
 
+    Optional<Student> findByRegisterNumber(String registerNumber);
+
     Optional<Student> findByRegisterNumberAndIsDeletedFalse(String registerNumber);
+
+    Optional<Student> findByEmail(String email);
 
     Optional<Student> findByEmailAndIsDeletedFalse(String email);
 

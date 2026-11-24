@@ -20,6 +20,7 @@ public class StudentResponse {
     private String fullName;
     private String email;
     private String phone;
+    private String initialPassword;
     private Long departmentId;
     private String departmentCode;
     private String departmentName;

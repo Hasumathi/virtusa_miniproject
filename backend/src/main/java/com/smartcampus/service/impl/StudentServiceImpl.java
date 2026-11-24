@@ -38,6 +38,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -80,14 +81,28 @@ public class StudentServiceImpl implements StudentService {
 
         String regNo = request.getRegisterNumber().trim().toUpperCase();
         if (studentRepository.existsByRegisterNumber(regNo)) {
-            log.warn("Attempted duplicate registration number: {}", regNo);
-            throw new DuplicateResourceException("Student", "registerNumber", regNo);
+            Optional<Student> existingOpt = studentRepository.findByRegisterNumber(regNo);
+            if (existingOpt.isPresent() && Boolean.TRUE.equals(existingOpt.get().getIsDeleted())) {
+                Student legacy = existingOpt.get();
+                legacy.setRegisterNumber(legacy.getRegisterNumber() + "_DEL_" + legacy.getId());
+                studentRepository.save(legacy);
+            } else {
+                log.warn("Attempted duplicate registration number: {}", regNo);
+                throw new DuplicateResourceException("Student", "registerNumber", regNo);
+            }
         }
 
         String email = request.getEmail().trim().toLowerCase();
         if (studentRepository.existsByEmail(email) || userRepository.existsByEmail(email)) {
-            log.warn("Attempted duplicate email address: {}", email);
-            throw new DuplicateResourceException("User/Student", "email", email);
+            Optional<Student> existingEmailOpt = studentRepository.findByEmail(email);
+            if (existingEmailOpt.isPresent() && Boolean.TRUE.equals(existingEmailOpt.get().getIsDeleted())) {
+                Student legacy = existingEmailOpt.get();
+                legacy.setEmail("del_" + legacy.getId() + "_" + legacy.getEmail());
+                studentRepository.save(legacy);
+            } else {
+                log.warn("Attempted duplicate email address: {}", email);
+                throw new DuplicateResourceException("User/Student", "email", email);
+            }
         }
 
         Department department = departmentRepository.findById(request.getDepartmentId())
@@ -100,6 +115,8 @@ public class StudentServiceImpl implements StudentService {
             String rawPassword = StringUtils.hasText(request.getInitialPassword())
                     ? request.getInitialPassword()
                     : regNo + "@Smart2026";
+
+            student.setInitialPassword(rawPassword);
 
             User user = User.builder()
                     .username(regNo)
@@ -278,6 +295,21 @@ public class StudentServiceImpl implements StudentService {
 
         studentMapper.updateEntityFromRequest(student, request, department);
 
+        if (StringUtils.hasText(request.getRegisterNumber())) {
+            String newRegNo = request.getRegisterNumber().trim().toUpperCase();
+            if (!newRegNo.equalsIgnoreCase(student.getRegisterNumber())) {
+                if (studentRepository.existsByRegisterNumberAndIdNot(newRegNo, id)) {
+                    log.warn("Attempted duplicate registration number for update: {}", newRegNo);
+                    throw new DuplicateResourceException("Student", "registerNumber", newRegNo);
+                }
+                student.setRegisterNumber(newRegNo);
+                if (student.getUser() != null) {
+                    student.getUser().setUsername(newRegNo);
+                    userRepository.save(student.getUser());
+                }
+            }
+        }
+
         if (StringUtils.hasText(request.getEmail())) {
             String newEmail = request.getEmail().trim().toLowerCase();
             if (!newEmail.equalsIgnoreCase(student.getEmail())) {
@@ -296,6 +328,15 @@ public class StudentServiceImpl implements StudentService {
         if (request.getAccountStatus() != null && student.getUser() != null) {
             student.getUser().setAccountStatus(request.getAccountStatus());
             userRepository.save(student.getUser());
+        }
+
+        if (StringUtils.hasText(request.getInitialPassword())) {
+            String newPassword = request.getInitialPassword().trim();
+            student.setInitialPassword(newPassword);
+            if (student.getUser() != null) {
+                student.getUser().setPassword(passwordEncoder.encode(newPassword));
+                userRepository.save(student.getUser());
+            }
         }
 
         Student updatedStudent = studentRepository.save(student);
@@ -321,17 +362,21 @@ public class StudentServiceImpl implements StudentService {
                     return new StudentNotFoundException(id);
                 });
 
-        // Soft deletion preserves academic history
+        // Soft deletion preserves academic history while freeing the unique registerNumber and email for re-use
         student.setIsDeleted(true);
         student.setAccountStatus(AccountStatus.INACTIVE);
+        student.setRegisterNumber(student.getRegisterNumber() + "_DEL_" + id);
+        student.setEmail("del_" + id + "_" + student.getEmail());
 
         if (student.getUser() != null) {
             student.getUser().setAccountStatus(AccountStatus.INACTIVE);
+            student.getUser().setUsername(student.getUser().getUsername() + "_DEL_" + id);
+            student.getUser().setEmail("del_" + id + "_" + student.getUser().getEmail());
             userRepository.save(student.getUser());
         }
 
         studentRepository.save(student);
-        log.info("Student successfully deactivated and soft-deleted: ID={}", id);
+        log.info("Student successfully deactivated and soft-deleted (registerNumber freed): ID={}", id);
 
         auditService.logAction(
                 null,

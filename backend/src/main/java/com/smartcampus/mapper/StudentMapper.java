@@ -61,6 +61,7 @@ public class StudentMapper {
                 .fullName(student.getFullName())
                 .email(student.getEmail())
                 .phone(student.getPhone())
+                .initialPassword(student.getInitialPassword() != null ? student.getInitialPassword() : (student.getRegisterNumber() + "@Smart2026"))
                 .departmentId(student.getDepartment() != null ? student.getDepartment().getId() : null)
                 .departmentCode(student.getDepartment() != null ? student.getDepartment().getCode() : null)
                 .departmentName(student.getDepartment() != null ? student.getDepartment().getName() : null)

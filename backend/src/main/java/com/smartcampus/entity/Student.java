@@ -56,6 +56,9 @@ public class Student {
     @Column(length = 255)
     private String profileImageUrl;
 
+    @Column(length = 100)
+    private String initialPassword;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     @Builder.Default
