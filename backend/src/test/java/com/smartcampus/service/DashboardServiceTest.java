@@ -77,7 +77,7 @@ class DashboardServiceTest {
         when(gradeRepository.findOverallAveragePercentage()).thenReturn(78.5);
         when(departmentRepository.findAll()).thenReturn(List.of(sampleDept));
         when(studentRepository.countByDepartmentIdAndIsDeletedFalse(1L)).thenReturn(80L);
-        when(studentRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(studentRepository.findByIsDeletedFalse(any(Pageable.class))).thenReturn(new PageImpl<>(Collections.emptyList()));
 
         FacultyDashboardResponse response = dashboardService.getFacultyDashboard();
 

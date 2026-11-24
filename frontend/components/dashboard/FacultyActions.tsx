@@ -239,8 +239,33 @@ export default function FacultyActions({
         throw new Error(data.message || "Failed to create student record.");
       }
 
-      setStudentMsg(`Student ${fullName} (${regNo.toUpperCase()}) created successfully!`);
-      setStudents((prev) => [data.data, ...prev]);
+      const createdStudent = data.data;
+
+      // Auto-enroll newly created student into available subjects for this semester
+      if (createdStudent?.id && subjects.length > 0) {
+        for (const sub of subjects) {
+          try {
+            await fetch("/backend-api/enrollments", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${backendToken}`,
+              },
+              body: JSON.stringify({
+                studentId: createdStudent.id,
+                subjectId: sub.id,
+                academicYear: "2026-2027",
+                semester: sub.semester || Number(studentSem),
+              }),
+            });
+          } catch {
+            // Backend also handles auto-enrollment
+          }
+        }
+      }
+
+      setStudentMsg(`Student ${fullName} (${regNo.toUpperCase()}) enrolled and registered for courses successfully!`);
+      setStudents((prev) => [createdStudent, ...prev]);
       setShowAddStudentModal(false);
       // Reset form
       setRegNo("");

@@ -3,9 +3,11 @@ package com.smartcampus.service.impl;
 import com.smartcampus.dto.request.*;
 import com.smartcampus.dto.response.AuthResponse;
 import com.smartcampus.entity.Department;
+import com.smartcampus.entity.Enrollment;
 import com.smartcampus.entity.Faculty;
 import com.smartcampus.entity.PasswordResetToken;
 import com.smartcampus.entity.Student;
+import com.smartcampus.entity.Subject;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.AccountStatus;
 import com.smartcampus.enums.Role;
@@ -49,6 +51,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
     private final AuditService auditService;
+    private final SubjectRepository subjectRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Value("${app.security.faculty-key:FACULTY_SECRET_KEY_2026}")
     private String facultyAuthorizationKey;
@@ -63,7 +67,9 @@ public class AuthServiceImpl implements AuthService {
             PasswordResetTokenRepository passwordResetTokenRepository,
             PasswordEncoder passwordEncoder,
             JwtTokenProvider tokenProvider,
-            AuditService auditService) {
+            AuditService auditService,
+            @Autowired(required = false) SubjectRepository subjectRepository,
+            @Autowired(required = false) EnrollmentRepository enrollmentRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.facultyRepository = facultyRepository;
@@ -73,6 +79,8 @@ public class AuthServiceImpl implements AuthService {
         this.passwordEncoder = passwordEncoder;
         this.tokenProvider = tokenProvider;
         this.auditService = auditService;
+        this.subjectRepository = subjectRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     @Override
@@ -225,6 +233,29 @@ public class AuthServiceImpl implements AuthService {
                 .user(savedUser)
                 .build();
         Student savedStudent = studentRepository.save(student);
+
+        // Auto-enroll new student into department subjects
+        if (subjectRepository != null && enrollmentRepository != null) {
+            try {
+                var subjects = subjectRepository.findByDepartmentIdAndSemester(department.getId(), 1);
+                if (subjects == null || subjects.isEmpty()) {
+                    subjects = subjectRepository.findByDepartmentId(department.getId());
+                }
+                if (subjects != null) {
+                    for (var sub : subjects) {
+                        Enrollment autoEnroll = Enrollment.builder()
+                                .student(savedStudent)
+                                .subject(sub)
+                                .academicYear("2026-2027")
+                                .semester(1)
+                                .build();
+                        enrollmentRepository.save(autoEnroll);
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Non-critical error auto-enrolling registered student {}: {}", regNo, ex.getMessage());
+            }
+        }
 
         log.info("Student account created: regNo={}, userId={}", regNo, savedUser.getId());
         auditService.logAction(savedUser.getId(), "REGISTER_STUDENT", "STUDENT", savedStudent.getId(),

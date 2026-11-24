@@ -5,7 +5,9 @@ import com.smartcampus.dto.request.StudentUpdateRequest;
 import com.smartcampus.dto.response.PagedResponse;
 import com.smartcampus.dto.response.StudentResponse;
 import com.smartcampus.entity.Department;
+import com.smartcampus.entity.Enrollment;
 import com.smartcampus.entity.Student;
+import com.smartcampus.entity.Subject;
 import com.smartcampus.entity.User;
 import com.smartcampus.enums.AccountStatus;
 import com.smartcampus.enums.Role;
@@ -14,7 +16,9 @@ import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.exception.StudentNotFoundException;
 import com.smartcampus.mapper.StudentMapper;
 import com.smartcampus.repository.DepartmentRepository;
+import com.smartcampus.repository.EnrollmentRepository;
 import com.smartcampus.repository.StudentRepository;
+import com.smartcampus.repository.SubjectRepository;
 import com.smartcampus.repository.UserRepository;
 import com.smartcampus.service.AuditService;
 import com.smartcampus.service.StudentService;
@@ -47,6 +51,8 @@ public class StudentServiceImpl implements StudentService {
     private final StudentMapper studentMapper;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final SubjectRepository subjectRepository;
+    private final EnrollmentRepository enrollmentRepository;
 
     @Autowired
     public StudentServiceImpl(
@@ -55,13 +61,17 @@ public class StudentServiceImpl implements StudentService {
             UserRepository userRepository,
             StudentMapper studentMapper,
             PasswordEncoder passwordEncoder,
-            AuditService auditService) {
+            AuditService auditService,
+            @Autowired(required = false) SubjectRepository subjectRepository,
+            @Autowired(required = false) EnrollmentRepository enrollmentRepository) {
         this.studentRepository = studentRepository;
         this.departmentRepository = departmentRepository;
         this.userRepository = userRepository;
         this.studentMapper = studentMapper;
         this.passwordEncoder = passwordEncoder;
         this.auditService = auditService;
+        this.subjectRepository = subjectRepository;
+        this.enrollmentRepository = enrollmentRepository;
     }
 
     @Override
@@ -106,6 +116,38 @@ public class StudentServiceImpl implements StudentService {
 
         Student savedStudent = studentRepository.save(student);
         log.info("Student successfully created with ID: {}, RegisterNumber: {}", savedStudent.getId(), regNo);
+
+        // Auto-enroll student into subjects for their department and semester
+        if (subjectRepository != null && enrollmentRepository != null) {
+            try {
+                List<Subject> subjects = subjectRepository.findByDepartmentIdAndSemester(
+                        department.getId(), savedStudent.getSemester());
+                if (subjects == null || subjects.isEmpty()) {
+                    subjects = subjectRepository.findByDepartmentId(department.getId());
+                }
+
+                String academicYear = "2026-2027";
+
+                if (subjects != null) {
+                    for (Subject sub : subjects) {
+                        boolean alreadyEnrolled = enrollmentRepository.existsByStudentIdAndSubjectId(
+                                savedStudent.getId(), sub.getId());
+                        if (!alreadyEnrolled) {
+                            Enrollment enrollment = Enrollment.builder()
+                                    .student(savedStudent)
+                                    .subject(sub)
+                                    .academicYear(academicYear)
+                                    .semester(sub.getSemester() != null ? sub.getSemester() : savedStudent.getSemester())
+                                    .build();
+                            enrollmentRepository.save(enrollment);
+                            log.info("Auto-enrolled student {} in subject {}", regNo, sub.getSubjectCode());
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                log.warn("Non-critical error auto-enrolling student {}: {}", regNo, ex.getMessage());
+            }
+        }
 
         auditService.logAction(
                 null,

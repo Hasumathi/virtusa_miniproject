@@ -88,7 +88,7 @@ class GradeServiceTest {
         assertEquals(93.0, response.getPercentage());
         assertEquals("A+", response.getLetterGrade());
         assertTrue(response.getIsPassed());
-        assertFalse(response.getIsPublished());
+        assertTrue(response.getIsPublished());
     }
 
     @Test
@@ -123,8 +123,8 @@ class GradeServiceTest {
     }
 
     @Test
-    @DisplayName("Reject grade entry when student is not enrolled in subject")
-    void testGradeCalculation_StudentNotEnrolled() {
+    @DisplayName("Auto-enroll student in subject if not enrolled during grade entry")
+    void testGradeCalculation_StudentAutoEnrolled() {
         GradeEntryRequest request = GradeEntryRequest.builder()
                 .studentId(100L)
                 .subjectId(10L)
@@ -136,8 +136,16 @@ class GradeServiceTest {
         when(studentRepository.findByIdAndIsDeletedFalse(100L)).thenReturn(Optional.of(sampleStudent));
         when(subjectRepository.findById(10L)).thenReturn(Optional.of(sampleSubject));
         when(enrollmentRepository.existsByStudentIdAndSubjectId(100L, 10L)).thenReturn(false);
+        when(gradeRepository.save(any(Grade.class))).thenAnswer(i -> {
+            Grade g = i.getArgument(0);
+            g.setId(3L);
+            return g;
+        });
 
-        assertThrows(IllegalArgumentException.class, () -> gradeService.enterOrUpdateGrade(request));
-        verify(gradeRepository, never()).save(any(Grade.class));
+        GradeResponse response = gradeService.enterOrUpdateGrade(request);
+
+        assertNotNull(response);
+        verify(enrollmentRepository).save(any(Enrollment.class));
+        verify(gradeRepository).save(any(Grade.class));
     }
 }

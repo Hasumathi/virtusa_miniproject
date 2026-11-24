@@ -3,6 +3,7 @@ package com.smartcampus.service.impl;
 import com.smartcampus.dto.request.GradeEntryRequest;
 import com.smartcampus.dto.response.GradeResponse;
 import com.smartcampus.dto.response.SemesterGradeSummaryResponse;
+import com.smartcampus.entity.Enrollment;
 import com.smartcampus.entity.Grade;
 import com.smartcampus.entity.Student;
 import com.smartcampus.entity.Subject;
@@ -66,11 +67,21 @@ public class GradeServiceImpl implements GradeService {
         Subject subject = subjectRepository.findById(request.getSubjectId())
                 .orElseThrow(() -> new ResourceNotFoundException("Subject", "id", request.getSubjectId()));
 
-        // Validate enrollment
+        // Validate enrollment; auto-enroll if not yet enrolled
         boolean isEnrolled = enrollmentRepository.existsByStudentIdAndSubjectId(student.getId(), subject.getId());
         if (!isEnrolled) {
-            log.warn("Student {} is not enrolled in subject {}. Cannot assign grade.", student.getId(), subject.getId());
-            throw new IllegalArgumentException("Student " + student.getRegisterNumber() + " is not enrolled in subject " + subject.getSubjectCode());
+            log.info("Student {} ({}) is not yet enrolled in subject {}. Auto-enrolling for grade assignment.",
+                    student.getId(), student.getRegisterNumber(), subject.getSubjectCode());
+            String academicYear = org.springframework.util.StringUtils.hasText(request.getAcademicYear())
+                    ? request.getAcademicYear().trim()
+                    : "2026-2027";
+            Enrollment autoEnrollment = Enrollment.builder()
+                    .student(student)
+                    .subject(subject)
+                    .academicYear(academicYear)
+                    .semester(request.getSemester() != null ? request.getSemester() : (subject.getSemester() != null ? subject.getSemester() : student.getSemester()))
+                    .build();
+            enrollmentRepository.save(autoEnrollment);
         }
 
         // Calculate total and percentage
@@ -85,7 +96,7 @@ public class GradeServiceImpl implements GradeService {
 
         String letterGrade = determineLetterGrade(percentage);
         boolean isPassed = percentage >= passThreshold;
-        boolean publish = request.getIsPublished() == null || Boolean.TRUE.equals(request.getIsPublished());
+        boolean publish = Boolean.TRUE.equals(request.getIsPublished());
 
         Optional<Grade> existing = gradeRepository.findByStudentIdAndSubjectIdAndSemesterAndAcademicYear(
                 student.getId(), subject.getId(), request.getSemester(), request.getAcademicYear());

@@ -12,7 +12,9 @@ import com.smartcampus.exception.ResourceNotFoundException;
 import com.smartcampus.exception.StudentNotFoundException;
 import com.smartcampus.mapper.StudentMapper;
 import com.smartcampus.repository.DepartmentRepository;
+import com.smartcampus.repository.EnrollmentRepository;
 import com.smartcampus.repository.StudentRepository;
+import com.smartcampus.repository.SubjectRepository;
 import com.smartcampus.repository.UserRepository;
 import com.smartcampus.service.impl.StudentServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +52,12 @@ class StudentServiceTest {
 
     @Mock
     private AuditService auditService;
+
+    @Mock
+    private SubjectRepository subjectRepository;
+
+    @Mock
+    private EnrollmentRepository enrollmentRepository;
 
     @Spy
     private StudentMapper studentMapper = new StudentMapper();

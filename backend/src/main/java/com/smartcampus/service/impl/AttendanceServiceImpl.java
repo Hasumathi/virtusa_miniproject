@@ -82,12 +82,18 @@ public class AttendanceServiceImpl implements AttendanceService {
             Student student = studentRepository.findByIdAndIsDeletedFalse(item.getStudentId())
                     .orElseThrow(() -> new StudentNotFoundException(item.getStudentId()));
 
-            // Validate that the student is enrolled in the subject
+            // Validate that the student is enrolled in the subject; auto-enroll if not yet enrolled
             boolean isEnrolled = enrollmentRepository.existsByStudentIdAndSubjectId(student.getId(), subject.getId());
             if (!isEnrolled) {
-                log.warn("Student {} is not enrolled in subject {}. Skipping or rejecting.", student.getId(), subject.getId());
-                throw new IllegalArgumentException(
-                        "Student " + student.getRegisterNumber() + " is not enrolled in subject " + subject.getSubjectCode());
+                log.info("Student {} ({}) is not yet enrolled in subject {}. Auto-enrolling now.",
+                        student.getId(), student.getRegisterNumber(), subject.getSubjectCode());
+                Enrollment autoEnrollment = Enrollment.builder()
+                        .student(student)
+                        .subject(subject)
+                        .academicYear("2026-2027")
+                        .semester(subject.getSemester() != null ? subject.getSemester() : student.getSemester())
+                        .build();
+                enrollmentRepository.save(autoEnrollment);
             }
 
             // Prevent duplicate attendance for same student, subject and date
