@@ -1,0 +1,49 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  FACULTY
+  STUDENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  identity     String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+
+  profileSettings ProfileSettings?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([role, identity])
+  @@index([role])
+}
+
+model ProfileSettings {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+
+  profileImageUrl    String?  @db.VarChar(500)
+  phone              String?  @db.VarChar(20)
+  department         String?  @db.VarChar(100)
+  bio                String?  @db.Text
+
+  emailNotifications Boolean  @default(true)
+  pushNotifications  Boolean  @default(true)
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
