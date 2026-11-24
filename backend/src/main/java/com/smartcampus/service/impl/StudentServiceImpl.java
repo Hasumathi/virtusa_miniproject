@@ -235,6 +235,27 @@ public class StudentServiceImpl implements StudentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Department", "id", request.getDepartmentId()));
 
         studentMapper.updateEntityFromRequest(student, request, department);
+
+        if (StringUtils.hasText(request.getEmail())) {
+            String newEmail = request.getEmail().trim().toLowerCase();
+            if (!newEmail.equalsIgnoreCase(student.getEmail())) {
+                if (studentRepository.existsByEmailAndIdNot(newEmail, id) || userRepository.existsByEmail(newEmail)) {
+                    log.warn("Attempted duplicate email address for update: {}", newEmail);
+                    throw new DuplicateResourceException("User/Student", "email", newEmail);
+                }
+                student.setEmail(newEmail);
+                if (student.getUser() != null) {
+                    student.getUser().setEmail(newEmail);
+                    userRepository.save(student.getUser());
+                }
+            }
+        }
+
+        if (request.getAccountStatus() != null && student.getUser() != null) {
+            student.getUser().setAccountStatus(request.getAccountStatus());
+            userRepository.save(student.getUser());
+        }
+
         Student updatedStudent = studentRepository.save(student);
         log.info("Successfully updated student record: ID={}", updatedStudent.getId());
 

@@ -41,4 +41,7 @@ public class GradeEntryRequest {
     @Min(value = 0, message = "Exam marks cannot be negative")
     @Max(value = 40, message = "Exam marks maximum is 40")
     private Double examMarks;
+
+    @Builder.Default
+    private Boolean isPublished = true;
 }

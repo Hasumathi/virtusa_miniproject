@@ -163,41 +163,45 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-[#f7f5ec] px-4 py-8 text-[#24352d] sm:px-8">
       <div className="mx-auto max-w-4xl">
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#648273]">
-              EduTrack
-            </p>
-            <h1 className="mt-2 text-3xl font-bold text-[#075b40]">
-              My Profile
-            </h1>
-            <p className="mt-1 text-sm text-[#718078]">
-              Manage your personal information and profile picture.
-            </p>
-          </div>
+        <header className="mb-8 rounded-3xl border border-[#e3e7dc] bg-white p-6 shadow-sm sm:p-8 dark:border-[#233143] dark:bg-[#16202c]">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#648273] dark:text-[#22c55e]">
+                EduTrack
+              </p>
+              <h1 className="mt-1 text-2xl font-bold text-[#075b40] sm:text-3xl dark:text-[#22c55e]">
+                My Profile
+              </h1>
+              <p className="mt-1 text-sm text-[#718078] dark:text-[#94a3b8]">
+                Manage your personal information and profile picture.
+              </p>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href={
-                profile.role === "FACULTY"
-                  ? "/faculty-dashboard"
-                  : "/student-dashboard"
-              }
-              className="rounded-xl border border-[#d9e2d9] bg-white px-5 py-2.5 text-sm font-semibold text-[#075b40] shadow-sm transition hover:bg-[#edf3ed] dark:border-[#334155] dark:bg-[#16202c] dark:text-[#22c55e]"
-            >
-              ← Back to Dashboard
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={
+                  profile.role === "FACULTY"
+                    ? "/faculty-dashboard"
+                    : "/student-dashboard"
+                }
+                className="inline-flex items-center gap-2 rounded-xl bg-[#edf5ee] px-5 py-2.5 text-sm font-bold text-[#075b40] transition hover:bg-[#dceee2] dark:bg-[#14532d]/40 dark:text-[#22c55e]"
+              >
+                ← Back to Dashboard
+              </Link>
 
-            <Link
-              href="/settings"
-              className="rounded-xl border border-[#d9e2d9] bg-white px-4 py-2.5 text-sm font-semibold text-[#075b40] shadow-sm transition hover:bg-[#edf3ed] dark:border-[#334155] dark:bg-[#16202c] dark:text-[#22c55e]"
-            >
-              ⚙️ Settings
-            </Link>
+              <Link
+                href="/settings"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#edf5ee] px-5 py-2.5 text-sm font-bold text-[#075b40] transition hover:bg-[#dceee2] dark:bg-[#14532d]/40 dark:text-[#22c55e]"
+              >
+                ⚙️ Settings
+              </Link>
 
-            <LogoutButton variant="danger">
-              🚪 Logout
-            </LogoutButton>
+              <LogoutButton
+                className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-5 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400"
+              >
+                🚪 Logout
+              </LogoutButton>
+            </div>
           </div>
         </header>
 
@@ -373,15 +377,17 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#f0efe8] pt-6">
-              <LogoutButton variant="danger">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[#f0efe8] pt-6 dark:border-[#233143]">
+              <LogoutButton
+                className="flex items-center gap-2 rounded-full border-2 border-red-200 bg-red-50 px-6 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:opacity-50 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+              >
                 🚪 Sign Out
               </LogoutButton>
 
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-xl bg-[#075b40] px-8 py-3.5 font-bold text-white shadow-sm transition hover:bg-[#06442f] disabled:opacity-50"
+                className="rounded-full bg-[#075b40] px-8 py-3.5 font-bold text-white shadow-sm transition hover:bg-[#06442f] disabled:opacity-50 dark:bg-[#10b981] dark:text-[#091b14] dark:hover:bg-[#059669]"
               >
                 {saving ? "Saving Changes..." : "Save Profile"}
               </button>

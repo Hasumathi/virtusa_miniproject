@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import Link from "next/link";
+import { applyAppTheme } from "@/components/theme/ThemeInitializer";
 
 const stats = [
   { icon: "♟", label: "Total Students", value: "1,248", note: "↗ 12% this year", tone: "green" },
@@ -169,6 +170,29 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("home");
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const [contactLoading, setContactLoading] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const isDark = document.documentElement.classList.contains("dark");
+      setIsDarkTheme(isDark);
+
+      const observer = new MutationObserver(() => {
+        setIsDarkTheme(document.documentElement.classList.contains("dark"));
+      });
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class", "data-theme"],
+      });
+      return () => observer.disconnect();
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = isDarkTheme ? "LIGHT" : "DARK";
+    applyAppTheme(nextTheme);
+    setIsDarkTheme(!isDarkTheme);
+  };
 
   function handleContactSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -221,9 +245,20 @@ export default function Home() {
             </a>
           </nav>
 
-          <a className="login-button" href="#portals">
-            Login <span>→</span>
-          </a>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Toggle Theme"
+              className="theme-toggle-btn"
+              title={isDarkTheme ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDarkTheme ? "☀️" : "🌙"}
+            </button>
+            <a className="login-button" href="#portals">
+              Login <span>→</span>
+            </a>
+          </div>
         </header>
 
         <div className="hero-content">

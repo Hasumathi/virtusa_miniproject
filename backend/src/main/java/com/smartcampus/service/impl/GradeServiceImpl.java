@@ -85,6 +85,7 @@ public class GradeServiceImpl implements GradeService {
 
         String letterGrade = determineLetterGrade(percentage);
         boolean isPassed = percentage >= passThreshold;
+        boolean publish = request.getIsPublished() == null || Boolean.TRUE.equals(request.getIsPublished());
 
         Optional<Grade> existing = gradeRepository.findByStudentIdAndSubjectIdAndSemesterAndAcademicYear(
                 student.getId(), subject.getId(), request.getSemester(), request.getAcademicYear());
@@ -100,6 +101,7 @@ public class GradeServiceImpl implements GradeService {
             grade.setPercentage(percentage);
             grade.setLetterGrade(letterGrade);
             grade.setIsPassed(isPassed);
+            grade.setIsPublished(publish);
         } else {
             grade = Grade.builder()
                     .student(student)
@@ -114,7 +116,7 @@ public class GradeServiceImpl implements GradeService {
                     .percentage(percentage)
                     .letterGrade(letterGrade)
                     .isPassed(isPassed)
-                    .isPublished(false) // Unpublished until faculty triggers publication
+                    .isPublished(publish)
                     .build();
         }
 

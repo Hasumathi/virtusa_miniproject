@@ -131,25 +131,27 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen bg-[#f7f5ec] px-4 py-8 text-[#24352d] sm:px-8 dark:bg-[#0b131e] dark:text-[#f1f5f9]">
       <div className="mx-auto max-w-4xl">
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#648273] dark:text-[#22c55e]">
-              EduTrack
-            </p>
-            <h1 className="mt-2 text-3xl font-bold text-[#075b40] dark:text-[#22c55e]">
-              Settings & Preferences
-            </h1>
-            <p className="mt-2 text-sm text-[#718078] dark:text-[#94a3b8]">
-              Manage portal appearance, theme, and notification preferences.
-            </p>
-          </div>
+        <header className="mb-8 rounded-3xl border border-[#e3e7dc] bg-white p-6 shadow-sm sm:p-8 dark:border-[#233143] dark:bg-[#16202c]">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#648273] dark:text-[#22c55e]">
+                EduTrack
+              </p>
+              <h1 className="mt-1 text-2xl font-bold text-[#075b40] sm:text-3xl dark:text-[#22c55e]">
+                Settings & Preferences
+              </h1>
+              <p className="mt-1 text-sm text-[#718078] dark:text-[#94a3b8]">
+                Manage portal appearance, theme, and notification preferences.
+              </p>
+            </div>
 
-          <Link
-            href={dashboardHref}
-            className="rounded-xl border border-[#d9e2d9] bg-white px-5 py-2.5 text-sm font-semibold text-[#075b40] shadow-sm transition hover:bg-[#edf3ed] dark:border-[#334155] dark:bg-[#16202c] dark:text-[#22c55e] dark:hover:bg-[#1f2b3b]"
-          >
-            ← Back to Dashboard
-          </Link>
+            <Link
+              href={dashboardHref}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#edf5ee] px-5 py-2.5 text-sm font-bold text-[#075b40] transition hover:bg-[#dceee2] dark:bg-[#14532d]/40 dark:text-[#22c55e]"
+            >
+              ← Back to Dashboard
+            </Link>
+          </div>
         </header>
 
         <section className="rounded-3xl border border-[#e3e7dc] bg-white p-6 shadow-sm sm:p-9 dark:border-[#233143] dark:bg-[#16202c]">

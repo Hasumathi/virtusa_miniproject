@@ -21,6 +21,8 @@ public interface StudentRepository extends JpaRepository<Student, Long>, JpaSpec
 
     Optional<Student> findByUserId(Long userId);
 
+    Page<Student> findByIsDeletedFalse(Pageable pageable);
+
     boolean existsByRegisterNumber(String registerNumber);
 
     boolean existsByRegisterNumberAndIdNot(String registerNumber, Long id);

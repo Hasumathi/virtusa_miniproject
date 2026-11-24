@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import LogoutButton from "@/components/auth/LogoutButton";
 import FacultyActions from "@/components/dashboard/FacultyActions";
 import SettingsModal from "@/components/dashboard/SettingsModal";
@@ -36,6 +37,26 @@ export default function DashboardShell({
   const [studentTab, setStudentTab] = useState<"overview" | "academics" | "announcements">("overview");
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const router = useRouter();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [liveRecentStudents, setLiveRecentStudents] = useState<any[]>(
+    isFaculty && data?.recentlyAddedStudents
+      ? data.recentlyAddedStudents.filter(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (s: any) => !s.isDeleted && s.accountStatus !== "INACTIVE"
+        )
+      : []
+  );
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [liveRecentGrades, setLiveRecentGrades] = useState<any[]>(
+    !isFaculty && data?.recentGrades ? data.recentGrades : []
+  );
+  const [liveAverageMarks, setLiveAverageMarks] = useState<number | undefined>(
+    !isFaculty && data?.averageMarks !== undefined ? data.averageMarks : undefined
+  );
 
   // Initialize theme from localStorage / system preference on mount
   useEffect(() => {
@@ -177,17 +198,94 @@ export default function DashboardShell({
           icon: "GR",
           title: "Average Score",
           value:
-            data?.averageMarks !== undefined
+            liveAverageMarks !== undefined
+              ? `${Number(liveAverageMarks).toFixed(1)}`
+              : data?.averageMarks !== undefined
               ? `${Number(data.averageMarks).toFixed(1)}`
               : "--",
           note: "Academic progress",
         },
       ];
 
-  const recentStudents =
-    isFaculty && data?.recentlyAddedStudents ? data.recentlyAddedStudents : [];
-  const recentGrades =
-    !isFaculty && data?.recentGrades ? data.recentGrades : [];
+  useEffect(() => {
+    if (isFaculty && data?.recentlyAddedStudents) {
+      setLiveRecentStudents(
+        data.recentlyAddedStudents.filter(
+          (s: any) => !s.isDeleted && s.accountStatus !== "INACTIVE"
+        )
+      );
+    }
+  }, [isFaculty, data?.recentlyAddedStudents]);
+
+  useEffect(() => {
+    if (!isFaculty && data) {
+      if (data.recentGrades) {
+        setLiveRecentGrades(data.recentGrades);
+      }
+      if (data.averageMarks !== undefined) {
+        setLiveAverageMarks(data.averageMarks);
+      }
+    }
+  }, [isFaculty, data]);
+
+  // Client-side refresh for student grades on mount
+  useEffect(() => {
+    if (!isFaculty && backendToken) {
+      fetch("/backend-api/dashboard/student", {
+        headers: { Authorization: `Bearer ${backendToken}` },
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json?.data) {
+            if (json.data.recentGrades && json.data.recentGrades.length > 0) {
+              setLiveRecentGrades(json.data.recentGrades);
+            }
+            if (json.data.averageMarks !== undefined) {
+              setLiveAverageMarks(json.data.averageMarks);
+            }
+          }
+        })
+        .catch((err) => console.warn("Could not fetch latest student grades:", err));
+    }
+  }, [isFaculty, backendToken]);
+
+  const handleDataRefresh = async () => {
+    router.refresh();
+    if (backendToken) {
+      try {
+        if (isFaculty) {
+          const res = await fetch("/backend-api/students?size=10", {
+            headers: { Authorization: `Bearer ${backendToken}` },
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.data?.content) {
+              setLiveRecentStudents(
+                json.data.content.filter(
+                  (s: any) => !s.isDeleted && s.accountStatus !== "INACTIVE"
+                )
+              );
+            }
+          }
+        } else {
+          const res = await fetch("/backend-api/dashboard/student", {
+            headers: { Authorization: `Bearer ${backendToken}` },
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json.data) {
+              if (json.data.recentGrades) setLiveRecentGrades(json.data.recentGrades);
+              if (json.data.averageMarks !== undefined) setLiveAverageMarks(json.data.averageMarks);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not refresh live dashboard:", err);
+      }
+    }
+  };
+
+  const recentGrades = liveRecentGrades;
 
   const navItems = isFaculty ? facultyNavItems : studentNavItems;
 
@@ -468,9 +566,10 @@ export default function DashboardShell({
           <div className="mb-10">
             <FacultyActions
               backendToken={backendToken}
-              initialStudents={recentStudents}
+              initialStudents={liveRecentStudents}
               activeTab={facultyTab === "overview" ? "students" : facultyTab}
               onTabChange={(tab) => setFacultyTab(tab)}
+              onDataRefresh={handleDataRefresh}
             />
           </div>
         )}
@@ -491,7 +590,7 @@ export default function DashboardShell({
             </p>
           </div>
 
-          {isFaculty && recentStudents.length > 0 ? (
+          {isFaculty && liveRecentStudents.length > 0 ? (
             <div className="overflow-x-auto rounded-2xl border border-[#e9e8df] bg-white p-6 shadow-sm">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -505,7 +604,7 @@ export default function DashboardShell({
                 </thead>
                 <tbody className="divide-y divide-[#f0efe8]">
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {recentStudents.map((s: any) => (
+                  {liveRecentStudents.map((s: any) => (
                     <tr key={s.id} className="hover:bg-[#fbfbf9]">
                       <td className="py-3 font-semibold text-[#075b40]">
                         {s.registerNumber}
@@ -525,39 +624,80 @@ export default function DashboardShell({
                 </tbody>
               </table>
             </div>
+          ) : isFaculty ? (
+            <div className="rounded-2xl border border-[#e9e8df] bg-white p-8 text-center text-sm text-[#68716d] shadow-sm">
+              No active enrolled students found. Use the console above to enroll new students.
+            </div>
           ) : !isFaculty && recentGrades.length > 0 ? (
             <div className="overflow-x-auto rounded-2xl border border-[#e9e8df] bg-white p-6 shadow-sm">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-base font-bold text-[#17212b]">
+                    Evaluation & Continuous Assessment Scores
+                  </h3>
+                  <p className="text-xs text-[#68716d]">
+                    Official semester evaluation breakdown recorded by faculty.
+                  </p>
+                </div>
+                <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                  ✓ {recentGrades.length} Course Result{recentGrades.length > 1 ? "s" : ""} Published
+                </span>
+              </div>
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-[#e9e8df] text-xs font-bold uppercase text-[#68716d]">
                     <th className="pb-3">Subject</th>
-                    <th className="pb-3">Score</th>
-                    <th className="pb-3">Grade</th>
-                    <th className="pb-3">Result</th>
+                    <th className="pb-3 text-center">Internal (25)</th>
+                    <th className="pb-3 text-center">Assign (15)</th>
+                    <th className="pb-3 text-center">Lab (20)</th>
+                    <th className="pb-3 text-center">Exam (40)</th>
+                    <th className="pb-3 text-center">Total (100)</th>
+                    <th className="pb-3 text-center">Grade</th>
+                    <th className="pb-3 text-center">Result</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f0efe8]">
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {recentGrades.map((g: any, i: number) => (
-                    <tr key={i} className="hover:bg-[#fbfbf9]">
-                      <td className="py-3 font-semibold text-[#075b40]">
-                        {g.subjectName || g.subjectCode}
-                      </td>
-                      <td className="py-3 font-medium">{g.totalMarks}</td>
-                      <td className="py-3">{g.letterGrade}</td>
-                      <td className="py-3">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            g.passed
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-red-50 text-red-700"
-                          }`}
-                        >
-                          {g.passed ? "PASSED" : "FAILED"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {recentGrades.map((g: any, i: number) => {
+                    const isPassed =
+                      g.isPassed !== undefined
+                        ? Boolean(g.isPassed)
+                        : g.passed !== undefined
+                        ? Boolean(g.passed)
+                        : Number(g.percentage || g.totalMarks) >= 50;
+
+                    return (
+                      <tr key={i} className="hover:bg-[#fbfbf9]">
+                        <td className="py-3 font-semibold text-[#075b40]">
+                          <div>{g.subjectName || g.subjectCode}</div>
+                          {g.subjectName && g.subjectCode && (
+                            <span className="text-xs font-mono font-normal text-[#68716d]">
+                              {g.subjectCode} • Sem {g.semester}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 text-center font-medium">{g.internalMarks ?? 0}</td>
+                        <td className="py-3 text-center font-medium">{g.assignmentMarks ?? 0}</td>
+                        <td className="py-3 text-center font-medium">{g.practicalMarks ?? 0}</td>
+                        <td className="py-3 text-center font-medium">{g.examMarks ?? 0}</td>
+                        <td className="py-3 text-center font-bold text-[#075b40]">
+                          {g.totalMarks ?? 0}
+                        </td>
+                        <td className="py-3 text-center font-bold">{g.letterGrade || "A"}</td>
+                        <td className="py-3 text-center">
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                              isPassed
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-red-50 text-red-700"
+                            }`}
+                          >
+                            {isPassed ? "PASSED" : "FAILED"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

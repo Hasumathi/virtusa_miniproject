@@ -86,9 +86,13 @@ public class DashboardServiceImpl implements DashboardService {
             deptCounts.put(dept.getCode(), count);
         }
 
-        List<StudentResponse> recentStudents = studentRepository.findAll(
-                PageRequest.of(0, 5, Sort.by("createdAt").descending())
-        ).getContent().stream().map(studentMapper::toResponse).toList();
+        List<StudentResponse> recentStudents = studentRepository.findByIsDeletedFalse(
+                PageRequest.of(0, 10, Sort.by("createdAt").descending())
+        ).getContent().stream()
+                .filter(s -> !Boolean.TRUE.equals(s.getIsDeleted()) && s.getAccountStatus() != com.smartcampus.enums.AccountStatus.INACTIVE)
+                .limit(5)
+                .map(studentMapper::toResponse)
+                .toList();
 
         return FacultyDashboardResponse.builder()
                 .totalStudents(totalStudents)
@@ -112,13 +116,21 @@ public class DashboardServiceImpl implements DashboardService {
         long totalEnrolled = enrollmentRepository.countByStudentId(student.getId());
 
         Double avgMarks = gradeRepository.findAveragePercentageByStudentId(student.getId());
-        double marks = avgMarks != null ? round(avgMarks) : 0.0;
 
         List<GradeResponse> recentGrades = gradeRepository.findByStudentIdAndIsPublishedTrue(student.getId()).stream()
                 .sorted((g1, g2) -> g2.getCreatedAt().compareTo(g1.getCreatedAt()))
-                .limit(5)
+                .limit(10)
                 .map(this::mapGradeToResponse)
                 .toList();
+
+        double marks;
+        if (avgMarks != null) {
+            marks = round(avgMarks);
+        } else if (!recentGrades.isEmpty()) {
+            marks = round(recentGrades.stream().mapToDouble(GradeResponse::getPercentage).average().orElse(0.0));
+        } else {
+            marks = 0.0;
+        }
 
         long unreadNotifs = notificationRepository.countByUserIdAndIsReadFalse(userId);
 
